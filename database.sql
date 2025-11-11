@@ -48,3 +48,6 @@ CREATE TABLE IF NOT EXISTS Respuesta (
 CREATE INDEX idx_respuesta_pregunta ON Respuesta(idPregunta);
 CREATE INDEX idx_respuesta_usuario ON Respuesta(idUsuario);
 
+-- 4. Insertar administrador por defecto
+INSERT INTO Administrador (username, password, correo) 
+VALUES ('admin', '$2b$10$WTxlE5DC6ba1OdXF0QUJfuvqNGgeN7RPUgA6scomr0mQiR.L/gpgu', 'admin@criptografia.com');
