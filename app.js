@@ -3,6 +3,9 @@ const express = require('express');
 const { PORT } = require('./config/constants');
 const sequelize = require('./config/sequelize');
 
+// Importar modelos y sus relaciones
+require('./models/index');
+
 // Importar rutas
 const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');

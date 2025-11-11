@@ -1,6 +1,5 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/sequelize');
-const Encuesta = require('./Encuesta');
 
 const Pregunta = sequelize.define('Pregunta', {
   idPregunta: {
@@ -10,11 +9,7 @@ const Pregunta = sequelize.define('Pregunta', {
   },
   idEncuesta: {
     type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: Encuesta,
-      key: 'idEncuesta'
-    }
+    allowNull: false
   },
   pregunta: {
     type: DataTypes.STRING(255),
@@ -28,7 +23,5 @@ const Pregunta = sequelize.define('Pregunta', {
   tableName: 'Pregunta',
   timestamps: false
 });
-
-Pregunta.belongsTo(Encuesta, { foreignKey: 'idEncuesta' });
 
 module.exports = Pregunta;

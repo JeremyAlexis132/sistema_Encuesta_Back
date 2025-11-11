@@ -2,8 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
-const Administrador = require('../models/Administrador');
-const Usuario = require('../models/Usuario');
+const { Administrador, Usuario } = require('../models');
 const { JWT_SECRET, BCRYPT_ROUNDS, JWT_EXPIRATION } = require('../config/constants');
 const { verifyToken } = require('../middleware/auth');
 

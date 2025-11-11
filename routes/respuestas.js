@@ -1,6 +1,5 @@
 const express = require('express');
-const Pregunta = require('../models/Pregunta');
-const Encuesta = require('../models/Encuesta');
+const { Pregunta, Encuesta } = require('../models');
 const { verifyToken } = require('../middleware/auth');
 
 const router = express.Router();
