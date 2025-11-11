@@ -14,10 +14,6 @@ const Pregunta = sequelize.define('Pregunta', {
   pregunta: {
     type: DataTypes.STRING(255),
     allowNull: false
-  },
-  respuesta: {
-    type: DataTypes.TEXT,
-    allowNull: true
   }
 }, {
   tableName: 'Pregunta',

@@ -1,5 +1,5 @@
 const express = require('express');
-const { Pregunta, Encuesta } = require('../models');
+const { Pregunta, Encuesta, Respuesta } = require('../models');
 const { verifyToken } = require('../middleware/auth');
 
 const router = express.Router();
@@ -13,20 +13,38 @@ router.post('/', verifyToken, async (req, res) => {
       return res.status(400).json({ error: 'Falta idPregunta o respuesta' });
     }
 
+    // Verificar que la pregunta existe
     const pregunta = await Pregunta.findByPk(idPregunta);
     if (!pregunta) {
       return res.status(404).json({ error: 'Pregunta no encontrada' });
     }
 
-    await pregunta.update({ respuesta });
+    // Verificar que el usuario no haya contestado ya esta pregunta
+    const respuestaExistente = await Respuesta.findOne({
+      where: {
+        idPregunta,
+        idUsuario: req.user.idUsuario
+      }
+    });
 
-    res.json({ mensaje: 'Respuesta registrada' });
+    if (respuestaExistente) {
+      return res.status(400).json({ error: 'Ya has contestado esta pregunta' });
+    }
+
+    // Crear nueva respuesta
+    await Respuesta.create({
+      idPregunta,
+      idUsuario: req.user.idUsuario,
+      respuesta
+    });
+
+    res.json({ mensaje: 'Respuesta registrada exitosamente' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// GET /respuestas/encuesta - Obtener respuestas de encuesta
+// POST /respuestas/obtener-encuesta - Obtener encuesta con todas las respuestas
 router.post('/obtener-encuesta', verifyToken, async (req, res) => {
   try {
     const { idEncuesta } = req.body;
@@ -36,7 +54,17 @@ router.post('/obtener-encuesta', verifyToken, async (req, res) => {
     }
 
     const encuesta = await Encuesta.findByPk(idEncuesta, {
-      include: [{ model: Pregunta }]
+      include: [
+        {
+          model: Pregunta,
+          include: [
+            {
+              model: Respuesta,
+              attributes: ['idRespuesta', 'idUsuario', 'respuesta', 'fechaRespuesta']
+            }
+          ]
+        }
+      ]
     });
     
     if (!encuesta) {
@@ -44,10 +72,10 @@ router.post('/obtener-encuesta', verifyToken, async (req, res) => {
     }
 
     res.json({
-      encuesta: { 
-        idEncuesta: encuesta.idEncuesta, 
-        idUsuario: encuesta.idUsuario, 
-        Preguntas: encuesta.Preguntas 
+      encuesta: {
+        idEncuesta: encuesta.idEncuesta,
+        idUsuario: encuesta.idUsuario,
+        Preguntas: encuesta.Preguntas
       }
     });
   } catch (err) {
@@ -55,7 +83,7 @@ router.post('/obtener-encuesta', verifyToken, async (req, res) => {
   }
 });
 
-// POST /respuestas/obtener-pregunta - Obtener respuesta de pregunta
+// POST /respuestas/obtener-pregunta - Obtener pregunta con sus respuestas
 router.post('/obtener-pregunta', verifyToken, async (req, res) => {
   try {
     const { idPregunta } = req.body;
@@ -64,7 +92,15 @@ router.post('/obtener-pregunta', verifyToken, async (req, res) => {
       return res.status(400).json({ error: 'Falta idPregunta' });
     }
 
-    const pregunta = await Pregunta.findByPk(idPregunta);
+    const pregunta = await Pregunta.findByPk(idPregunta, {
+      include: [
+        {
+          model: Respuesta,
+          attributes: ['idRespuesta', 'idUsuario', 'respuesta', 'fechaRespuesta']
+        }
+      ]
+    });
+    
     if (!pregunta) {
       return res.status(404).json({ error: 'Pregunta no encontrada' });
     }
