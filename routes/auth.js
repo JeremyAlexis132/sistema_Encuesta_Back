@@ -2,14 +2,13 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
-const pool = require('../config/database');
+const Usuario = require('../models/Usuario');
 const { JWT_SECRET, BCRYPT_ROUNDS, JWT_EXPIRATION } = require('../config/constants');
 
 const router = express.Router();
 
 // POST /auth/registro - Registro de usuario
 router.post('/registro', async (req, res) => {
-  const connection = await pool.getConnection();
   try {
     const { numeroCuenta, correo, password } = req.body;
 
@@ -18,9 +17,18 @@ router.post('/registro', async (req, res) => {
     }
 
     // Verificar duplicidad
-    const [existente] = await connection.query('SELECT * FROM Usuario WHERE numeroCuenta = ? OR correo = ?', [numeroCuenta, correo]);
-    if (existente.length > 0) {
-      return res.status(400).json({ error: 'El número de cuenta o correo ya existe' });
+    const existente = await Usuario.findOne({
+      where: { numeroCuenta }
+    });
+    if (existente) {
+      return res.status(400).json({ error: 'El número de cuenta ya existe' });
+    }
+
+    const existenteCorrco = await Usuario.findOne({
+      where: { correo }
+    });
+    if (existenteCorrco) {
+      return res.status(400).json({ error: 'El correo ya existe' });
     }
 
     // Generar claves
@@ -29,10 +37,12 @@ router.post('/registro', async (req, res) => {
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
     // Guardar usuario
-    await connection.query(
-      'INSERT INTO Usuario (numeroCuenta, correo, password, privateKey) VALUES (?, ?, ?, ?)',
-      [numeroCuenta, correo, passwordHash, privateKey]
-    );
+    await Usuario.create({
+      numeroCuenta,
+      correo,
+      password: passwordHash,
+      privateKey
+    });
 
     res.status(201).json({
       mensaje: 'Usuario registrado exitosamente',
@@ -41,14 +51,11 @@ router.post('/registro', async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
-  } finally {
-    connection.release();
   }
 });
 
 // POST /auth/login - Login de usuario
 router.post('/login', async (req, res) => {
-  const connection = await pool.getConnection();
   try {
     const { numeroCuenta, password } = req.body;
 
@@ -56,13 +63,12 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Falta numeroCuenta o password' });
     }
 
-    const [usuarios] = await connection.query('SELECT * FROM Usuario WHERE numeroCuenta = ?', [numeroCuenta]);
+    const usuario = await Usuario.findOne({ where: { numeroCuenta } });
     
-    if (usuarios.length === 0) {
+    if (!usuario) {
       return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
     }
 
-    const usuario = usuarios[0];
     const esValida = await bcrypt.compare(password, usuario.password);
     
     if (!esValida) {
@@ -81,8 +87,6 @@ router.post('/login', async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
-  } finally {
-    connection.release();
   }
 });
 

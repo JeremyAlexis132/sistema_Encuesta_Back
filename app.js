@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const { PORT } = require('./config/constants');
+const sequelize = require('./config/sequelize');
 
 // Importar rutas
 const authRoutes = require('./routes/auth');
@@ -30,7 +31,14 @@ app.get('/', (req, res) => {
   });
 });
 
-// Iniciar servidor
-app.listen(PORT, () => {
-  console.log(`Servidor ejecutando en http://localhost:${PORT}`);
-});
+// Sincronizar Sequelize e iniciar servidor
+sequelize.sync()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Servidor ejecutando en http://localhost:${PORT}`);
+    });
+  })
+  .catch(err => {
+    console.error('❌ Error al sincronizar base de datos:', err);
+    process.exit(1);
+  });

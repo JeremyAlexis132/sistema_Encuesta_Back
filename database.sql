@@ -1,30 +1,28 @@
-CREATE TABLE `Administrador` (
-  `idAministrador` integer PRIMARY KEY AUTOINCREMENT,
-  `username` varchar(20),
-  `password` varchar(100),
-  `correo` varchar(50)
+CREATE TABLE Administrador (
+  idAdministrador INT AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(20) NOT NULL,
+  password VARCHAR(100) NOT NULL,
+  correo VARCHAR(50) NOT NULL
 );
 
-CREATE TABLE `Usuario` (
-  `idUsuario` integer PRIMARY KEY AUTOINCREMENT,
-  `numeroCuenta` varchar(20),
-  `password` varchar(100),
-  `correo` varchar(50),
-  `privateKey` varchar(50)
+CREATE TABLE Usuario (
+  idUsuario INT AUTO_INCREMENT PRIMARY KEY,
+  numeroCuenta VARCHAR(20) NOT NULL,
+  password VARCHAR(100) NOT NULL,
+  correo VARCHAR(50) NOT NULL,
+  privateKey VARCHAR(50) NOT NULL
 );
 
-CREATE TABLE `Encuesta` (
-  `idEncuesta` integer PRIMARY KEY AUTOINCREMENT,
-  `idUsuario` integer
+CREATE TABLE Encuesta (
+  idEncuesta INT AUTO_INCREMENT PRIMARY KEY,
+  idUsuario INT,
+  FOREIGN KEY (idUsuario) REFERENCES Usuario(idUsuario)
 );
 
-CREATE TABLE `Pregunta` (
-  `idPregunta` integer PRIMARY KEY AUTOINCREMENT,
-  `idEncuesta` integer,
-  `pregunta` varchar(50),
-  `respuesta` varchar(50)
+CREATE TABLE Pregunta (
+  idPregunta INT AUTO_INCREMENT PRIMARY KEY,
+  idEncuesta INT,
+  pregunta VARCHAR(50) NOT NULL,
+  respuesta VARCHAR(50),
+  FOREIGN KEY (idEncuesta) REFERENCES Encuesta(idEncuesta)
 );
-
--- Relaciones (Foreign Keys)
-ALTER TABLE `Encuesta` ADD FOREIGN KEY (`idUsuario`) REFERENCES `Usuario` (`idUsuario`);
-ALTER TABLE `Pregunta` ADD FOREIGN KEY (`idEncuesta`) REFERENCES `Encuesta` (`idEncuesta`);

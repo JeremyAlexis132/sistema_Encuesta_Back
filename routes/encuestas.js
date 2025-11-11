@@ -1,12 +1,13 @@
 const express = require('express');
-const pool = require('../config/database');
+const Encuesta = require('../models/Encuesta');
+const Usuario = require('../models/Usuario');
+const Pregunta = require('../models/Pregunta');
 const { verifyToken } = require('../middleware/auth');
 
 const router = express.Router();
 
 // POST /encuestas/crear - Crear encuesta (solo admin)
 router.post('/crear', verifyToken, async (req, res) => {
-  const connection = await pool.getConnection();
   try {
     if (req.user.tipo !== 'admin') {
       return res.status(403).json({ error: 'Solo administradores pueden crear encuestas' });
@@ -18,97 +19,84 @@ router.post('/crear', verifyToken, async (req, res) => {
       return res.status(400).json({ error: 'Falta idUsuario' });
     }
 
-    const [usuario] = await connection.query('SELECT * FROM Usuario WHERE idUsuario = ?', [idUsuario]);
-    if (usuario.length === 0) {
+    const usuario = await Usuario.findByPk(idUsuario);
+    if (!usuario) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
-    const [result] = await connection.query('INSERT INTO Encuesta (idUsuario) VALUES (?)', [idUsuario]);
+    const encuesta = await Encuesta.create({ idUsuario });
 
     res.status(201).json({
       mensaje: 'Encuesta creada',
-      encuesta: { idEncuesta: result.insertId, idUsuario }
+      encuesta: { idEncuesta: encuesta.idEncuesta, idUsuario }
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
-  } finally {
-    connection.release();
   }
 });
 
-// POST /encuestas/:id/preguntas - Agregar pregunta (solo admin)
-router.post('/:id/preguntas', verifyToken, async (req, res) => {
-  const connection = await pool.getConnection();
+// POST /encuestas/agregar-pregunta - Agregar pregunta (solo admin)
+router.post('/agregar-pregunta', verifyToken, async (req, res) => {
   try {
     if (req.user.tipo !== 'admin') {
       return res.status(403).json({ error: 'Solo administradores pueden crear preguntas' });
     }
 
-    const { id } = req.params;
-    const { pregunta } = req.body;
+    const { idEncuesta, pregunta } = req.body;
 
-    if (!pregunta) {
-      return res.status(400).json({ error: 'Falta pregunta' });
+    if (!idEncuesta || !pregunta) {
+      return res.status(400).json({ error: 'Falta idEncuesta o pregunta' });
     }
 
-    const [encuesta] = await connection.query('SELECT * FROM Encuesta WHERE idEncuesta = ?', [id]);
-    if (encuesta.length === 0) {
+    const encuesta = await Encuesta.findByPk(idEncuesta);
+    if (!encuesta) {
       return res.status(404).json({ error: 'Encuesta no encontrada' });
     }
 
-    const [result] = await connection.query('INSERT INTO Pregunta (idEncuesta, pregunta) VALUES (?, ?)', [id, pregunta]);
+    const nuevaPregunta = await Pregunta.create({ idEncuesta, pregunta });
 
     res.status(201).json({
       mensaje: 'Pregunta añadida',
-      pregunta: { idPregunta: result.insertId, idEncuesta: id, pregunta }
+      pregunta: { idPregunta: nuevaPregunta.idPregunta, idEncuesta, pregunta }
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
-  } finally {
-    connection.release();
   }
 });
 
 // GET /encuestas - Obtener todas las encuestas
 router.get('/', verifyToken, async (req, res) => {
-  const connection = await pool.getConnection();
   try {
-    const [encuestas] = await connection.query('SELECT * FROM Encuesta');
-    const [preguntas] = await connection.query('SELECT * FROM Pregunta');
+    const encuestas = await Encuesta.findAll({
+      include: [{ model: Pregunta }]
+    });
 
-    const resultado = encuestas.map(e => ({
-      ...e,
-      preguntas: preguntas.filter(p => p.idEncuesta === e.idEncuesta)
-    }));
-
-    res.json({ encuestas: resultado });
+    res.json({ encuestas });
   } catch (err) {
     res.status(500).json({ error: err.message });
-  } finally {
-    connection.release();
   }
 });
 
-// GET /encuestas/:id - Obtener encuesta específica
-router.get('/:id', verifyToken, async (req, res) => {
-  const connection = await pool.getConnection();
+// POST /encuestas/obtener - Obtener encuesta específica
+router.post('/obtener', verifyToken, async (req, res) => {
   try {
-    const { id } = req.params;
+    const { idEncuesta } = req.body;
 
-    const [encuesta] = await connection.query('SELECT * FROM Encuesta WHERE idEncuesta = ?', [id]);
-    if (encuesta.length === 0) {
+    if (!idEncuesta) {
+      return res.status(400).json({ error: 'Falta idEncuesta' });
+    }
+
+    const encuesta = await Encuesta.findByPk(idEncuesta, {
+      include: [{ model: Pregunta }]
+    });
+    
+    if (!encuesta) {
       return res.status(404).json({ error: 'Encuesta no encontrada' });
     }
 
-    const [preguntas] = await connection.query('SELECT * FROM Pregunta WHERE idEncuesta = ?', [id]);
-
-    res.json({
-      encuesta: { ...encuesta[0], preguntas }
-    });
+    res.json({ encuesta });
   } catch (err) {
     res.status(500).json({ error: err.message });
-  } finally {
-    connection.release();
   }
 });
 

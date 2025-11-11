@@ -1,74 +1,78 @@
 const express = require('express');
-const pool = require('../config/database');
+const Pregunta = require('../models/Pregunta');
+const Encuesta = require('../models/Encuesta');
 const { verifyToken } = require('../middleware/auth');
 
 const router = express.Router();
 
-// POST /respuestas/:idPregunta - Responder pregunta
-router.post('/:idPregunta', verifyToken, async (req, res) => {
-  const connection = await pool.getConnection();
+// POST /respuestas - Responder pregunta
+router.post('/', verifyToken, async (req, res) => {
   try {
-    const { idPregunta } = req.params;
-    const { respuesta } = req.body;
+    const { idPregunta, respuesta } = req.body;
 
-    if (!respuesta) {
-      return res.status(400).json({ error: 'Falta respuesta' });
+    if (!idPregunta || !respuesta) {
+      return res.status(400).json({ error: 'Falta idPregunta o respuesta' });
     }
 
-    const [pregunta] = await connection.query('SELECT * FROM Pregunta WHERE idPregunta = ?', [idPregunta]);
-    if (pregunta.length === 0) {
+    const pregunta = await Pregunta.findByPk(idPregunta);
+    if (!pregunta) {
       return res.status(404).json({ error: 'Pregunta no encontrada' });
     }
 
-    await connection.query('UPDATE Pregunta SET respuesta = ? WHERE idPregunta = ?', [respuesta, idPregunta]);
+    await pregunta.update({ respuesta });
 
     res.json({ mensaje: 'Respuesta registrada' });
   } catch (err) {
     res.status(500).json({ error: err.message });
-  } finally {
-    connection.release();
   }
 });
 
-// GET /respuestas/encuesta/:idEncuesta - Obtener respuestas de encuesta
-router.get('/encuesta/:idEncuesta', verifyToken, async (req, res) => {
-  const connection = await pool.getConnection();
+// GET /respuestas/encuesta - Obtener respuestas de encuesta
+router.post('/obtener-encuesta', verifyToken, async (req, res) => {
   try {
-    const { idEncuesta } = req.params;
+    const { idEncuesta } = req.body;
 
-    const [encuesta] = await connection.query('SELECT * FROM Encuesta WHERE idEncuesta = ?', [idEncuesta]);
-    if (encuesta.length === 0) {
+    if (!idEncuesta) {
+      return res.status(400).json({ error: 'Falta idEncuesta' });
+    }
+
+    const encuesta = await Encuesta.findByPk(idEncuesta, {
+      include: [{ model: Pregunta }]
+    });
+    
+    if (!encuesta) {
       return res.status(404).json({ error: 'Encuesta no encontrada' });
     }
 
-    const [preguntas] = await connection.query('SELECT * FROM Pregunta WHERE idEncuesta = ?', [idEncuesta]);
-
     res.json({
-      encuesta: { idEncuesta: encuesta[0].idEncuesta, idUsuario: encuesta[0].idUsuario, preguntas }
+      encuesta: { 
+        idEncuesta: encuesta.idEncuesta, 
+        idUsuario: encuesta.idUsuario, 
+        Preguntas: encuesta.Preguntas 
+      }
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
-  } finally {
-    connection.release();
   }
 });
 
-// GET /respuestas/pregunta/:idPregunta - Obtener respuesta de pregunta
-router.get('/pregunta/:idPregunta', verifyToken, async (req, res) => {
-  const connection = await pool.getConnection();
+// POST /respuestas/obtener-pregunta - Obtener respuesta de pregunta
+router.post('/obtener-pregunta', verifyToken, async (req, res) => {
   try {
-    const { idPregunta } = req.params;
+    const { idPregunta } = req.body;
 
-    const [pregunta] = await connection.query('SELECT * FROM Pregunta WHERE idPregunta = ?', [idPregunta]);
-    if (pregunta.length === 0) {
+    if (!idPregunta) {
+      return res.status(400).json({ error: 'Falta idPregunta' });
+    }
+
+    const pregunta = await Pregunta.findByPk(idPregunta);
+    if (!pregunta) {
       return res.status(404).json({ error: 'Pregunta no encontrada' });
     }
 
-    res.json({ pregunta: pregunta[0] });
+    res.json({ pregunta });
   } catch (err) {
     res.status(500).json({ error: err.message });
-  } finally {
-    connection.release();
   }
 });
 
