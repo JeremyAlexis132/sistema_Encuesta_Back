@@ -1,11 +1,7 @@
-const express = require('express');
 const { Encuesta, Usuario, Pregunta } = require('../models');
-const { verifyToken } = require('../middleware/auth');
-
-const router = express.Router();
 
 // POST /encuestas/crear - Crear encuesta (solo admin)
-router.post('/crear', verifyToken, async (req, res) => {
+const crear = async (req, res) => {
   try {
     if (req.user.tipo !== 'admin') {
       return res.status(403).json({ error: 'Solo administradores pueden crear encuestas' });
@@ -31,10 +27,10 @@ router.post('/crear', verifyToken, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+};
 
 // POST /encuestas/agregar-pregunta - Agregar pregunta (solo admin)
-router.post('/agregar-pregunta', verifyToken, async (req, res) => {
+const agregarPregunta = async (req, res) => {
   try {
     if (req.user.tipo !== 'admin') {
       return res.status(403).json({ error: 'Solo administradores pueden crear preguntas' });
@@ -60,10 +56,9 @@ router.post('/agregar-pregunta', verifyToken, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
-
+};
 // GET /encuestas - Obtener todas las encuestas
-router.get('/', verifyToken, async (req, res) => {
+const obtenerEncuestas = async (req, res) => {
   try {
     const encuestas = await Encuesta.findAll({
       include: [{ model: Pregunta }]
@@ -73,10 +68,10 @@ router.get('/', verifyToken, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+};
 
 // POST /encuestas/obtener - Obtener encuesta específica
-router.post('/obtener', verifyToken, async (req, res) => {
+const obtenerEncuesta = async (req, res) => {
   try {
     const { idEncuesta } = req.body;
 
@@ -96,6 +91,10 @@ router.post('/obtener', verifyToken, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
-
-module.exports = router;
+};
+module.exports = {
+  crear,
+  agregarPregunta,
+  obtenerEncuestas,
+  obtenerEncuesta
+};

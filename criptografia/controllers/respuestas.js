@@ -1,11 +1,7 @@
-const express = require('express');
 const { Pregunta, Encuesta, Respuesta } = require('../models');
-const { verifyToken } = require('../middleware/auth');
-
-const router = express.Router();
 
 // POST /respuestas - Responder pregunta
-router.post('/', verifyToken, async (req, res) => {
+const obtenerRespuestas = async (req, res) => {
   try {
     const { idPregunta, respuesta } = req.body;
 
@@ -42,10 +38,10 @@ router.post('/', verifyToken, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+};
 
 // POST /respuestas/obtener-encuesta - Obtener encuesta con todas las respuestas
-router.post('/obtener-encuesta', verifyToken, async (req, res) => {
+const obtenerEncuesta = async (req, res) => {
   try {
     const { idEncuesta } = req.body;
 
@@ -81,10 +77,10 @@ router.post('/obtener-encuesta', verifyToken, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+};
 
 // POST /respuestas/obtener-pregunta - Obtener pregunta con sus respuestas
-router.post('/obtener-pregunta', verifyToken, async (req, res) => {
+const obtenerPregunta = async (req, res) => {
   try {
     const { idPregunta } = req.body;
 
@@ -109,6 +105,10 @@ router.post('/obtener-pregunta', verifyToken, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+};
 
-module.exports = router;
+module.exports = {
+  obtenerRespuestas,
+  obtenerEncuesta,
+  obtenerPregunta
+};

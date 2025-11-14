@@ -1,15 +1,10 @@
-const express = require('express');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { Administrador, Usuario } = require('../models');
-const { JWT_SECRET, BCRYPT_ROUNDS, JWT_EXPIRATION } = require('../config/constants');
-const { verifyToken } = require('../middleware/auth');
-
-const router = express.Router();
 
 // POST /admin/login - Login de administrador
-router.post('/login', async (req, res) => {
+const login  = async (req, res) => {
   try {
     const { username, password } = req.body;
 
@@ -31,8 +26,8 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign(
       { idAdministrador: admin.idAdministrador, username: admin.username, tipo: 'admin' },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRATION }
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRATION }
     );
 
     res.json({
@@ -42,17 +37,17 @@ router.post('/login', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+};
 
 // POST /admin/crear-usuario - Crear usuario (solo admin)
-router.post('/crear-usuario', verifyToken, async (req, res) => {
+const crearUsuario = async (req, res) => {
   try {
     if (req.user.tipo !== 'admin') {
       return res.status(403).json({ error: 'No autorizado' });
     }
-
+    
     const { numeroCuenta, correo, password } = req.body;
-
+    
     if (!numeroCuenta || !correo || !password) {
       return res.status(400).json({ error: 'Falta numeroCuenta, correo o password' });
     }
@@ -63,18 +58,18 @@ router.post('/crear-usuario', verifyToken, async (req, res) => {
     if (existente) {
       return res.status(400).json({ error: 'El número de cuenta ya existe' });
     }
-
+    
     const privateKey = crypto.randomBytes(32).toString('hex');
     const publicKey = crypto.randomBytes(32).toString('hex');
-    const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-
+    const passwordHash = await bcrypt.hash(password, process.env.BCRYPT_ROUNDS);
+    
     await Usuario.create({
       numeroCuenta,
       correo,
       password: passwordHash,
       privateKey
     });
-
+    
     res.status(201).json({
       mensaje: 'Usuario creado exitosamente',
       usuario: { numeroCuenta, correo },
@@ -83,34 +78,34 @@ router.post('/crear-usuario', verifyToken, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+};
 
 // POST /admin/crear-admin - Crear administrador (solo admin)
-router.post('/crear-admin', verifyToken, async (req, res) => {
+const crearAdmin = async (req, res) => {
   try {
     if (req.user.tipo !== 'admin') {
       return res.status(403).json({ error: 'No autorizado' });
     }
-
+    
     const { username, password, correo } = req.body;
-
+    
     if (!username || !password || !correo) {
       return res.status(400).json({ error: 'Falta username, password o correo' });
     }
-
+    
     const existente = await Administrador.findOne({ where: { username } });
     if (existente) {
       return res.status(400).json({ error: 'El username ya existe' });
     }
-
-    const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-
+    
+    const passwordHash = await bcrypt.hash(password, process.env.BCRYPT_ROUNDS);
+    
     await Administrador.create({
       username,
       password: passwordHash,
       correo
     });
-
+    
     res.status(201).json({
       mensaje: 'Administrador creado exitosamente',
       admin: { username, correo }
@@ -118,10 +113,10 @@ router.post('/crear-admin', verifyToken, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+};
 
 // POST /admin/editar-usuario - Editar usuario (solo admin)
-router.post('/editar-usuario', verifyToken, async (req, res) => {
+const editarUsuario = async (req, res) => {
   try {
     if (req.user.tipo !== 'admin') {
       return res.status(403).json({ error: 'No autorizado' });
@@ -132,20 +127,20 @@ router.post('/editar-usuario', verifyToken, async (req, res) => {
     if (!idUsuario) {
       return res.status(400).json({ error: 'idUsuario es requerido' });
     }
-
+    
     const usuario = await Usuario.findByPk(idUsuario);
     if (!usuario) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
-
+    
     const actualizaciones = {};
     if (correo) actualizaciones.correo = correo;
-    if (password) actualizaciones.password = await bcrypt.hash(password, BCRYPT_ROUNDS);
-
+    if (password) actualizaciones.password = await bcrypt.hash(password, process.env.BCRYPT_ROUNDS);
+    
     if (Object.keys(actualizaciones).length > 0) {
       await usuario.update(actualizaciones);
     }
-
+    
     res.json({
       mensaje: 'Usuario actualizado exitosamente',
       usuario: { idUsuario: usuario.idUsuario, numeroCuenta: usuario.numeroCuenta, correo: usuario.correo }
@@ -153,21 +148,21 @@ router.post('/editar-usuario', verifyToken, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+};
 
 // POST /admin/editar-admin - Editar administrador (solo admin)
-router.post('/editar-admin', verifyToken, async (req, res) => {
+const editarAdmin = async (req, res) => {
   try {
     if (req.user.tipo !== 'admin') {
       return res.status(403).json({ error: 'No autorizado' });
     }
-
+    
     const { idAdministrador, correo, password } = req.body;
-
+    
     if (!idAdministrador) {
       return res.status(400).json({ error: 'idAdministrador es requerido' });
     }
-
+    
     const admin = await Administrador.findByPk(idAdministrador);
     if (!admin) {
       return res.status(404).json({ error: 'Administrador no encontrado' });
@@ -175,12 +170,12 @@ router.post('/editar-admin', verifyToken, async (req, res) => {
 
     const actualizaciones = {};
     if (correo) actualizaciones.correo = correo;
-    if (password) actualizaciones.password = await bcrypt.hash(password, BCRYPT_ROUNDS);
-
+    if (password) actualizaciones.password = await bcrypt.hash(password, process.env.BCRYPT_ROUNDS);
+    
     if (Object.keys(actualizaciones).length > 0) {
       await admin.update(actualizaciones);
     }
-
+    
     res.json({
       mensaje: 'Administrador actualizado exitosamente',
       admin: { idAdministrador: admin.idAdministrador, username: admin.username, correo: admin.correo }
@@ -188,10 +183,10 @@ router.post('/editar-admin', verifyToken, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+};
 
 // GET /admin/usuarios - Obtener usuarios (solo admin)
-router.get('/usuarios', verifyToken, async (req, res) => {
+const usuarios = async (req, res) => {
   try {
     if (req.user.tipo !== 'admin') {
       return res.status(403).json({ error: 'No autorizado' });
@@ -205,10 +200,10 @@ router.get('/usuarios', verifyToken, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+};
 
 // GET /admin/administradores - Obtener administradores (solo admin)
-router.get('/administradores', verifyToken, async (req, res) => {
+const administradores = async (req, res) => {
   try {
     if (req.user.tipo !== 'admin') {
       return res.status(403).json({ error: 'No autorizado' });
@@ -217,11 +212,19 @@ router.get('/administradores', verifyToken, async (req, res) => {
     const administradores = await Administrador.findAll({
       attributes: ['idAdministrador', 'username', 'correo']
     });
-
+    
     res.json({ administradores });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+};
 
-module.exports = router;
+module.exports = {
+  login,
+  crearUsuario,
+  crearAdmin,
+  editarUsuario,
+  editarAdmin,
+  usuarios,
+  administradores
+};

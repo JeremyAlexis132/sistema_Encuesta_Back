@@ -1,12 +1,8 @@
-const express = require('express');
 const crypto = require('crypto');
 const { Usuario, Encuesta } = require('../models');
-const { verifyToken } = require('../middleware/auth');
-
-const router = express.Router();
 
 // POST /firma-ciega/obtener-clave-publica - Obtener clave pública del usuario
-router.post('/obtener-clave-publica', verifyToken, async (req, res) => {
+const obtenerClavePublica = async (req, res) => {
   try {
     if (req.user.tipo !== 'usuario') {
       return res.status(403).json({ error: 'Solo usuarios pueden obtener clave pública' });
@@ -30,10 +26,10 @@ router.post('/obtener-clave-publica', verifyToken, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+};
 
 // POST /firma-ciega/generar-firma - Generar firma ciega
-router.post('/generar-firma', verifyToken, async (req, res) => {
+const generarFirma = async (req, res) => {
   try {
     if (req.user.tipo !== 'usuario') {
       return res.status(403).json({ error: 'Solo usuarios pueden solicitar firmas' });
@@ -67,10 +63,10 @@ router.post('/generar-firma', verifyToken, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+};
 
 // POST /firma-ciega/verificar-firma - Verificar firma ciega
-router.post('/verificar-firma', async (req, res) => {
+const verificarFirma = async (req, res) => {
   try {
     const { idUsuario, mensajeCegado, firmaBlind } = req.body;
 
@@ -98,6 +94,10 @@ router.post('/verificar-firma', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+};
 
-module.exports = router;
+module.exports = {
+  obtenerClavePublica,
+  generarFirma,
+  verificarFirma
+};

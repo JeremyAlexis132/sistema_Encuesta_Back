@@ -1,14 +1,10 @@
-const express = require('express');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { Usuario } = require('../models');
-const { JWT_SECRET, BCRYPT_ROUNDS, JWT_EXPIRATION } = require('../config/constants');
-
-const router = express.Router();
 
 // POST /auth/registro - Registro de usuario
-router.post('/registro', async (req, res) => {
+const registro = async (req, res) => {
   try {
     const { numeroCuenta, correo, password } = req.body;
 
@@ -34,7 +30,7 @@ router.post('/registro', async (req, res) => {
     // Generar claves
     const privateKey = crypto.randomBytes(32).toString('hex');
     const publicKey = crypto.randomBytes(32).toString('hex');
-    const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+    const passwordHash = await bcrypt.hash(password, process.env.BCRYPT_ROUNDS);
 
     // Guardar usuario
     await Usuario.create({
@@ -52,10 +48,10 @@ router.post('/registro', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+};
 
 // POST /auth/login - Login de usuario
-router.post('/login', async (req, res) => {
+const login = async (req, res) => {
   try {
     const { numeroCuenta, password } = req.body;
 
@@ -77,8 +73,8 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign(
       { idUsuario: usuario.idUsuario, numeroCuenta: usuario.numeroCuenta, tipo: 'usuario' },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRATION }
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRATION }
     );
 
     res.json({
@@ -88,6 +84,10 @@ router.post('/login', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+};
 
-module.exports = router;
+
+module.exports = {
+  login,
+  registro
+};
