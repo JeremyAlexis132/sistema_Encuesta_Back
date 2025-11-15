@@ -12,7 +12,6 @@ const BCRYPT_ROUNDS = Number.isInteger(_envRounds) ? _envRounds : DEFAULT_BCRYPT
 
 // POST /admin/login - Login de administrador
 const login  = async (req, res) => {
-  console.log('Login admin request body:', req.body);
   try {
     const { username, password } = req.body;
 
@@ -116,6 +115,7 @@ const crearUsuario = async (req, res) => {
   }
 };
 
+/* NO USADOS
 // POST /admin/crear-admin - Crear administrador (solo admin)
 const crearAdmin = async (req, res) => {
   try {
@@ -221,6 +221,7 @@ const editarAdmin = async (req, res) => {
   }
 };
 
+*/
 // GET /admin/usuarios - Obtener usuarios (solo admin)
 const usuarios = async (req, res) => {
   try {
@@ -238,6 +239,7 @@ const usuarios = async (req, res) => {
   }
 };
 
+/*NO USADO
 // GET /admin/administradores - Obtener administradores (solo admin)
 const administradores = async (req, res) => {
   try {
@@ -254,13 +256,14 @@ const administradores = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+*/
 
 module.exports = {
   login,
   crearUsuario,
-  crearAdmin,
-  editarUsuario,
-  editarAdmin,
+  // crearAdmin,
+  // editarUsuario,
+  // editarAdmin,
   usuarios,
-  administradores
+  // administradores
 };

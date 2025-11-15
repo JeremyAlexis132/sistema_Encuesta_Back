@@ -2,7 +2,7 @@ const { Pregunta, Encuesta, Respuesta, OpcionRespuesta, Usuario } = require('../
 const { dbCriptografia } = require('../database/config');
 const crypto = require('crypto');
 
-// POST /respuestas - Responder pregunta
+// POST /respuestas - Responder pregunta USADO
 const crearRespuesta = async (req, res) => {
   try {
     const { idUsuario } = req.user;
@@ -76,12 +76,11 @@ const crearRespuesta = async (req, res) => {
       throw err;
     }
   } catch (err) {
-    console.log(err);
     res.status(500).json({ error: err.message });
   }
 };
 
-// POST /respuestas/obtener-encuesta - Obtener encuesta con todas las respuestas
+// POST /respuestas/obtener-encuesta - Obtener encuesta con todas las respuestas USADO
 const obtenerEncuesta = async (req, res) => {
   try {
     const encuestas = await Encuesta.findAll({
@@ -146,36 +145,36 @@ const obtenerEncuesta = async (req, res) => {
   }
 };
 
-// POST /respuestas/obtener-pregunta - Obtener pregunta con sus respuestas
-const obtenerPregunta = async (req, res) => {
-  try {
-    const { idPregunta } = req.body;
+// POST /respuestas/obtener-pregunta - Obtener pregunta con sus respuestas NO USADO
+// const obtenerPregunta = async (req, res) => {
+//   try {
+//     const { idPregunta } = req.body;
 
-    if (!idPregunta) {
-      return res.status(400).json({ error: 'Falta idPregunta' });
-    }
+//     if (!idPregunta) {
+//       return res.status(400).json({ error: 'Falta idPregunta' });
+//     }
 
-    const pregunta = await Pregunta.findByPk(idPregunta, {
-      include: [
-        {
-          model: Respuesta,
-          attributes: ['idRespuesta', 'idUsuario', 'respuesta', 'fechaRespuesta']
-        }
-      ]
-    });
+//     const pregunta = await Pregunta.findByPk(idPregunta, {
+//       include: [
+//         {
+//           model: Respuesta,
+//           attributes: ['idRespuesta', 'idUsuario', 'respuesta', 'fechaRespuesta']
+//         }
+//       ]
+//     });
     
-    if (!pregunta) {
-      return res.status(404).json({ error: 'Pregunta no encontrada' });
-    }
+//     if (!pregunta) {
+//       return res.status(404).json({ error: 'Pregunta no encontrada' });
+//     }
 
-    res.json({ pregunta });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
+//     res.json({ pregunta });
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// };
 
 module.exports = {
   crearRespuesta,
   obtenerEncuesta,
-  obtenerPregunta
+  // obtenerPregunta
 };

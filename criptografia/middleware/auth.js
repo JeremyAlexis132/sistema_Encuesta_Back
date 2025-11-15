@@ -2,7 +2,6 @@ const jwt = require('jsonwebtoken');
 
 const verifyToken = (req, res, next) => {
   const apiKey = req.headers['x-api-key'];
-  console.log('x-api-key:', apiKey);
   if (!apiKey) return res.status(401).json({ error: 'x-api-key requerida' });
 
   try {

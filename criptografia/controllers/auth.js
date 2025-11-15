@@ -2,6 +2,8 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { Usuario } = require('../models');
+const fs = require('fs');
+const path = require('path');
 
 const DEFAULT_BCRYPT_ROUNDS = 10;
 const _envRounds = Number.parseInt(process.env.BCRYPT_ROUNDS, 10);
@@ -11,45 +13,66 @@ const BCRYPT_ROUNDS = Number.isInteger(_envRounds) ? _envRounds : DEFAULT_BCRYPT
 const registro = async (req, res) => {
   try {
     const { numeroCuenta, correo, password } = req.body;
-
+    
     if (!numeroCuenta || !correo || !password) {
+      console.log('Falta numeroCuenta, correo o password');
       return res.status(400).json({ error: 'Falta numeroCuenta, correo o password' });
     }
 
-    // Verificar duplicidad
-    const existente = await Usuario.findOne({
-      where: { numeroCuenta }
+    const existente = await Usuario.findOne({ 
+      where: { numeroCuenta } 
     });
     if (existente) {
+      console.log('El número de cuenta ya existe');
       return res.status(400).json({ error: 'El número de cuenta ya existe' });
     }
-
-    const existenteCorrco = await Usuario.findOne({
-      where: { correo }
+    
+    // Generar par de claves RSA (privateKey y publicKey están matemáticamente relacionadas)
+    const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+      publicKeyEncoding: {
+        type: 'spki',
+        format: 'pem'
+      },
+      privateKeyEncoding: {
+        type: 'pkcs8',
+        format: 'pem'
+      }
     });
-    if (existenteCorrco) {
-      return res.status(400).json({ error: 'El correo ya existe' });
-    }
-
-    // Generar claves
-    const privateKey = crypto.randomBytes(32).toString('hex');
-    const publicKey = crypto.randomBytes(32).toString('hex');
+    
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-
-    // Guardar usuario
-    await Usuario.create({
+    
+    const usuario = await Usuario.create({
       numeroCuenta,
       correo,
       password: passwordHash,
-      privateKey
+      privateKey  // Guardar la clave privada en formato PEM
     });
-
+    
+    // Crear directorio para claves públicas si no existe
+    const keysDir = path.join(__dirname, '../../public/keys');
+    if (!fs.existsSync(keysDir)) {
+      fs.mkdirSync(keysDir, { recursive: true });
+    }
+    
+    // Generar nombre único para el archivo de clave pública
+    const filename = `publickey_${usuario.idUsuario}_${numeroCuenta}.pem`;
+    const filePath = path.join(keysDir, filename);
+    
+    // Guardar clave pública en archivo
+    fs.writeFileSync(filePath, publicKey);
+    
+    // URL para descargar la clave pública
+    const publicKeyUrl = `/keys/${filename}`;
+    
     res.status(201).json({
-      mensaje: 'Usuario registrado exitosamente',
+      mensaje: 'Usuario creado exitosamente',
       usuario: { numeroCuenta, correo },
-      publicKey
+      publicKeyUrl,  // URL para descargar el archivo
+      publicKeyFile: filename  // Nombre del archivo
     });
   } catch (err) {
+    console.log(err);
     res.status(500).json({ error: err.message });
   }
 };

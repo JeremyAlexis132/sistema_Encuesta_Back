@@ -2,7 +2,7 @@ const { Encuesta, Usuario, Pregunta, OpcionRespuesta, EncuestaAsignada, Respuest
 const { dbCriptografia } = require('../database/config');
 const { Op } = require('sequelize');
 
-// POST /encuestas/crear - Crear encuesta (solo admin)
+// POST /encuestas/crear - Crear encuesta (solo admin) USADO
 const crear = async (req, res) => {
   try {
     if (req.user.tipo !== 'admin') {
@@ -63,35 +63,35 @@ const crear = async (req, res) => {
   }
 };
 
-// POST /encuestas/agregar-pregunta - Agregar pregunta (solo admin)
-const agregarPregunta = async (req, res) => {
-  try {
-    if (req.user.tipo !== 'admin') {
-      return res.status(403).json({ error: 'Solo administradores pueden crear preguntas' });
-    }
+// POST /encuestas/agregar-pregunta - Agregar pregunta (solo admin) NO USADO
+// const agregarPregunta = async (req, res) => {
+//   try {
+//     if (req.user.tipo !== 'admin') {
+//       return res.status(403).json({ error: 'Solo administradores pueden crear preguntas' });
+//     }
 
-    const { idEncuesta, pregunta } = req.body;
+//     const { idEncuesta, pregunta } = req.body;
 
-    if (!idEncuesta || !pregunta) {
-      return res.status(400).json({ error: 'Falta idEncuesta o pregunta' });
-    }
+//     if (!idEncuesta || !pregunta) {
+//       return res.status(400).json({ error: 'Falta idEncuesta o pregunta' });
+//     }
 
-    const encuesta = await Encuesta.findByPk(idEncuesta);
-    if (!encuesta) {
-      return res.status(404).json({ error: 'Encuesta no encontrada' });
-    }
+//     const encuesta = await Encuesta.findByPk(idEncuesta);
+//     if (!encuesta) {
+//       return res.status(404).json({ error: 'Encuesta no encontrada' });
+//     }
 
-    const nuevaPregunta = await Pregunta.create({ idEncuesta, pregunta });
+//     const nuevaPregunta = await Pregunta.create({ idEncuesta, pregunta });
 
-    res.status(201).json({
-      mensaje: 'Pregunta añadida',
-      pregunta: { idPregunta: nuevaPregunta.idPregunta, idEncuesta, pregunta }
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-// GET /encuestas - Obtener todas las encuestas
+//     res.status(201).json({
+//       mensaje: 'Pregunta añadida',
+//       pregunta: { idPregunta: nuevaPregunta.idPregunta, idEncuesta, pregunta }
+//     });
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// };
+// GET /encuestas - Obtener todas las encuestas USADO
 const obtenerEncuestas = async (req, res) => {
   try {
     const encuestas = await Encuesta.findAll({
@@ -110,29 +110,30 @@ const obtenerEncuestas = async (req, res) => {
   }
 };
 
-// POST /encuestas/obtener - Obtener encuesta específica
-const obtenerEncuesta = async (req, res) => {
-  try {
-    const { idEncuesta } = req.body;
+// POST /encuestas/obtener - Obtener encuesta específica NO USADO
+// const obtenerEncuesta = async (req, res) => {
+//   try {
+//     const { idEncuesta } = req.body;
 
-    if (!idEncuesta) {
-      return res.status(400).json({ error: 'Falta idEncuesta' });
-    }
+//     if (!idEncuesta) {
+//       return res.status(400).json({ error: 'Falta idEncuesta' });
+//     }
 
-    const encuesta = await Encuesta.findByPk(idEncuesta, {
-      include: [{ model: Pregunta }]
-    });
+//     const encuesta = await Encuesta.findByPk(idEncuesta, {
+//       include: [{ model: Pregunta }]
+//     });
     
-    if (!encuesta) {
-      return res.status(404).json({ error: 'Encuesta no encontrada' });
-    }
+//     if (!encuesta) {
+//       return res.status(404).json({ error: 'Encuesta no encontrada' });
+//     }
 
-    res.json({ encuesta });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
+//     res.json({ encuesta });
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// };
 
+//USADO
 const asignarEncuesta = async (req, res) => {
   const { idUsuario, idEncuesta } = req.body;
 
@@ -157,6 +158,7 @@ const asignarEncuesta = async (req, res) => {
   }
 }
 
+//USADO
 const obtenerEncuestaAsignada = async (req, res) => {
   const { idUsuario } = req.user;
   if (!idUsuario) {
@@ -218,9 +220,9 @@ const obtenerEncuestaAsignada = async (req, res) => {
 
 module.exports = {
   crear,
-  agregarPregunta,
+  // agregarPregunta,
   obtenerEncuestas,
-  obtenerEncuesta,
+  // obtenerEncuesta,
   asignarEncuesta,
   obtenerEncuestaAsignada
 };

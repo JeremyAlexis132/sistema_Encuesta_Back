@@ -1,34 +1,34 @@
 const crypto = require('crypto');
 const { Usuario, Encuesta } = require('../models');
 
-// POST /firma-ciega/obtener-clave-publica - Obtener clave pública del usuario
-const obtenerClavePublica = async (req, res) => {
-  try {
-    if (req.user.tipo !== 'usuario') {
-      return res.status(403).json({ error: 'Solo usuarios pueden obtener clave pública' });
-    }
+// POST /firma-ciega/obtener-clave-publica - Obtener clave pública del usuario NO USADO
+// const obtenerClavePublica = async (req, res) => {
+//   try {
+//     if (req.user.tipo !== 'usuario') {
+//       return res.status(403).json({ error: 'Solo usuarios pueden obtener clave pública' });
+//     }
 
-    const usuario = await Usuario.findByPk(req.user.idUsuario);
-    if (!usuario) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
-    }
+//     const usuario = await Usuario.findByPk(req.user.idUsuario);
+//     if (!usuario) {
+//       return res.status(404).json({ error: 'Usuario no encontrado' });
+//     }
 
-    // Generar clave pública a partir de privada
-    const clavePublica = crypto
-      .createHash('sha256')
-      .update(usuario.privateKey + 'publica')
-      .digest('hex');
+//     // Generar clave pública a partir de privada
+//     const clavePublica = crypto
+//       .createHash('sha256')
+//       .update(usuario.privateKey + 'publica')
+//       .digest('hex');
 
-    res.json({
-      idUsuario: req.user.idUsuario,
-      clavePublica
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
+//     res.json({
+//       idUsuario: req.user.idUsuario,
+//       clavePublica
+//     });
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// };
 
-// POST /firma-ciega/generar-firma - Generar firma ciega
+// POST /firma-ciega/generar-firma - Generar firma ciega USADO
 const generarFirma = async (req, res) => {
   try {
     if (req.user.tipo !== 'usuario') {
@@ -67,39 +67,39 @@ const generarFirma = async (req, res) => {
   }
 };
 
-// POST /firma-ciega/verificar-firma - Verificar firma ciega
-const verificarFirma = async (req, res) => {
-  try {
-    const { idUsuario, mensajeCegado, firmaBlind } = req.body;
+// POST /firma-ciega/verificar-firma - Verificar firma ciega NO USADO
+// const verificarFirma = async (req, res) => {
+//   try {
+//     const { idUsuario, mensajeCegado, firmaBlind } = req.body;
 
-    if (!idUsuario || !mensajeCegado || !firmaBlind) {
-      return res.status(400).json({ error: 'Falta idUsuario, mensajeCegado o firmaBlind' });
-    }
+//     if (!idUsuario || !mensajeCegado || !firmaBlind) {
+//       return res.status(400).json({ error: 'Falta idUsuario, mensajeCegado o firmaBlind' });
+//     }
 
-    const usuario = await Usuario.findByPk(idUsuario);
-    if (!usuario) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
-    }
+//     const usuario = await Usuario.findByPk(idUsuario);
+//     if (!usuario) {
+//       return res.status(404).json({ error: 'Usuario no encontrado' });
+//     }
 
-    // Verificar: regenerar firma
-    const firmaRecalculada = crypto
-      .createHash('sha256')
-      .update(usuario.privateKey + mensajeCegado)
-      .digest('hex');
+//     // Verificar: regenerar firma
+//     const firmaRecalculada = crypto
+//       .createHash('sha256')
+//       .update(usuario.privateKey + mensajeCegado)
+//       .digest('hex');
 
-    const esValida = firmaRecalculada === firmaBlind;
+//     const esValida = firmaRecalculada === firmaBlind;
 
-    res.json({
-      esValida,
-      mensajeVerificacion: esValida ? 'Firma válida' : 'Firma inválida'
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
+//     res.json({
+//       esValida,
+//       mensajeVerificacion: esValida ? 'Firma válida' : 'Firma inválida'
+//     });
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// };
 
 module.exports = {
-  obtenerClavePublica,
+  // obtenerClavePublica,
   generarFirma,
-  verificarFirma
+  // verificarFirma
 };
