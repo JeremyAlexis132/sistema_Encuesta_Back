@@ -1,41 +1,51 @@
-const { Pregunta, Encuesta, Respuesta } = require('../models');
+const { Pregunta, Encuesta, Respuesta, OpcionRespuesta } = require('../models');
+const { dbCriptografia } = require('../database/config');
 
 // POST /respuestas - Responder pregunta
-const obtenerRespuestas = async (req, res) => {
+const crearRespuesta = async (req, res) => {
   try {
-    const { idPregunta, respuesta } = req.body;
-
-    if (!idPregunta || !respuesta) {
-      return res.status(400).json({ error: 'Falta idPregunta o respuesta' });
+    const { idUsuario } = req.user;
+    const { data } = req.body;
+    console.log(data);
+    if (!idUsuario) {
+      return res.status(400).json({ error: 'Falta idUsuario' });
     }
-
-    // Verificar que la pregunta existe
-    const pregunta = await Pregunta.findByPk(idPregunta);
-    if (!pregunta) {
-      return res.status(404).json({ error: 'Pregunta no encontrada' });
+    if (!data) {
+      return res.status(400).json({ error: 'Falta la información o no es un arreglo' });
     }
+    const respuestasArray = data;
+    const transaction = await dbCriptografia.transaction();
+    try {
+      const fechaRespuesta = new Date();
 
-    // Verificar que el usuario no haya contestado ya esta pregunta
-    const respuestaExistente = await Respuesta.findOne({
-      where: {
-        idPregunta,
-        idUsuario: req.user.idUsuario
+      for (const respuesta of respuestasArray) {
+        const { idOpcionRespuesta, idPregunta } = respuesta;
+
+        if (!idOpcionRespuesta || !idPregunta) {
+          await transaction.rollback();
+          return res.status(400).json({ error: 'Cada respuesta debe tener idOpcionRespuesta e idPregunta' });
+        }
+
+        await Respuesta.create({
+          idUsuario,
+          idPregunta,
+          idOpcionRespuesta,
+          fechaRespuesta
+        }, { transaction });
+
       }
-    });
 
-    if (respuestaExistente) {
-      return res.status(400).json({ error: 'Ya has contestado esta pregunta' });
+      await transaction.commit();
+
+      res.json({ 
+        mensaje: 'Respuestas registradas exitosamente',
+      });
+    } catch (err) {
+      await transaction.rollback();
+      throw err;
     }
-
-    // Crear nueva respuesta
-    await Respuesta.create({
-      idPregunta,
-      idUsuario: req.user.idUsuario,
-      respuesta
-    });
-
-    res.json({ mensaje: 'Respuesta registrada exitosamente' });
   } catch (err) {
+    console.log(err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -43,36 +53,62 @@ const obtenerRespuestas = async (req, res) => {
 // POST /respuestas/obtener-encuesta - Obtener encuesta con todas las respuestas
 const obtenerEncuesta = async (req, res) => {
   try {
-    const { idEncuesta } = req.body;
-
-    if (!idEncuesta) {
-      return res.status(400).json({ error: 'Falta idEncuesta' });
-    }
-
-    const encuesta = await Encuesta.findByPk(idEncuesta, {
+    const encuestas = await Encuesta.findAll({
       include: [
         {
           model: Pregunta,
           include: [
             {
-              model: Respuesta,
-              attributes: ['idRespuesta', 'idUsuario', 'respuesta', 'fechaRespuesta']
+              model: OpcionRespuesta,
+              attributes: ['idOpcionRespuesta', 'opcion']
             }
           ]
         }
       ]
     });
     
-    if (!encuesta) {
-      return res.status(404).json({ error: 'Encuesta no encontrada' });
+    if (!encuestas || encuestas.length === 0) {
+      return res.status(404).json({ error: 'No se encontraron encuestas' });
     }
 
+    // Procesar cada encuesta para agregar el conteo de respuestas
+    const encuestasConConteo = await Promise.all(
+      encuestas.map(async (encuesta) => {
+        const preguntasConConteo = await Promise.all(
+          encuesta.Pregunta.map(async (pregunta) => {
+            const opcionesConConteo = await Promise.all(
+              pregunta.OpcionRespuesta.map(async (opcion) => {
+                // Contar cuántas respuestas hay para esta opción
+                const count = await Respuesta.count({
+                  where: {
+                    idOpcionRespuesta: opcion.idOpcionRespuesta,
+                    idPregunta: pregunta.idPregunta
+                  }
+                });
+
+                return {
+                  opcion: opcion.opcion,
+                  numero: count
+                };
+              })
+            );
+
+            return {
+              texto: pregunta.texto,
+              opciones: opcionesConConteo
+            };
+          })
+        );
+
+        return {
+          nombre: encuesta.nombre,
+          preguntas: preguntasConConteo
+        };
+      })
+    );
+
     res.json({
-      encuesta: {
-        idEncuesta: encuesta.idEncuesta,
-        idUsuario: encuesta.idUsuario,
-        Preguntas: encuesta.Preguntas
-      }
+      encuestas: encuestasConConteo
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -108,7 +144,7 @@ const obtenerPregunta = async (req, res) => {
 };
 
 module.exports = {
-  obtenerRespuestas,
+  crearRespuesta,
   obtenerEncuesta,
   obtenerPregunta
 };

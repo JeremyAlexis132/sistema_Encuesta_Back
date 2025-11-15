@@ -3,8 +3,14 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { Administrador, Usuario } = require('../models');
 
+// Configuración de rounds para bcrypt: convertir la variable de entorno a número
+const DEFAULT_BCRYPT_ROUNDS = 10;
+const _envRounds = Number.parseInt(process.env.BCRYPT_ROUNDS, 10);
+const BCRYPT_ROUNDS = Number.isInteger(_envRounds) ? _envRounds : DEFAULT_BCRYPT_ROUNDS;
+
 // POST /admin/login - Login de administrador
 const login  = async (req, res) => {
+  console.log('Login admin request body:', req.body);
   try {
     const { username, password } = req.body;
 
@@ -61,7 +67,7 @@ const crearUsuario = async (req, res) => {
     
     const privateKey = crypto.randomBytes(32).toString('hex');
     const publicKey = crypto.randomBytes(32).toString('hex');
-    const passwordHash = await bcrypt.hash(password, process.env.BCRYPT_ROUNDS);
+    const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
     
     await Usuario.create({
       numeroCuenta,
@@ -98,7 +104,7 @@ const crearAdmin = async (req, res) => {
       return res.status(400).json({ error: 'El username ya existe' });
     }
     
-    const passwordHash = await bcrypt.hash(password, process.env.BCRYPT_ROUNDS);
+    const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
     
     await Administrador.create({
       username,
@@ -135,7 +141,7 @@ const editarUsuario = async (req, res) => {
     
     const actualizaciones = {};
     if (correo) actualizaciones.correo = correo;
-    if (password) actualizaciones.password = await bcrypt.hash(password, process.env.BCRYPT_ROUNDS);
+    if (password) actualizaciones.password = await bcrypt.hash(password, BCRYPT_ROUNDS);
     
     if (Object.keys(actualizaciones).length > 0) {
       await usuario.update(actualizaciones);
@@ -170,7 +176,7 @@ const editarAdmin = async (req, res) => {
 
     const actualizaciones = {};
     if (correo) actualizaciones.correo = correo;
-    if (password) actualizaciones.password = await bcrypt.hash(password, process.env.BCRYPT_ROUNDS);
+    if (password) actualizaciones.password = await bcrypt.hash(password, BCRYPT_ROUNDS);
     
     if (Object.keys(actualizaciones).length > 0) {
       await admin.update(actualizaciones);

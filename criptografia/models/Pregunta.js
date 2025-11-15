@@ -11,8 +11,8 @@ const Pregunta = dbCriptografia.define('Pregunta', {
     type: DataTypes.INTEGER,
     allowNull: false
   },
-  pregunta: {
-    type: DataTypes.STRING(255),
+  texto: {
+    type: DataTypes.STRING(300),
     allowNull: false
   }
 }, {

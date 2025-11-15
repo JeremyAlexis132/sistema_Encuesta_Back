@@ -1,31 +1,23 @@
 const { DataTypes } = require('sequelize');
 const { dbCriptografia } = require('../database/config.js');
 
-const Respuesta = dbCriptografia.define('Respuesta', {
-  idRespuesta: {
+const EncuestaAsignada = dbCriptografia.define('EncuestaAsignada', {
+  idEncuestaAsignada: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true
   },
-  idPregunta: {
+  idEncuesta: {
     type: DataTypes.INTEGER,
     allowNull: false
   },
   idUsuario: {
     type: DataTypes.INTEGER,
     allowNull: false
-  },
-  idOpcionRespuesta: {
-    type: DataTypes.INTEGER,
-    allowNull: false
-  },
-  fechaRespuesta: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW
   }
 }, {
-  tableName: 'Respuesta',
+  tableName: 'EncuestaAsignada',
   timestamps: false
 });
 
-module.exports = Respuesta;
+module.exports = EncuestaAsignada;

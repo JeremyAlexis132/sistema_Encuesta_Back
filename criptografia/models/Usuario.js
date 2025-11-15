@@ -22,7 +22,7 @@ const Usuario = dbCriptografia.define('Usuario', {
     allowNull: false
   },
   privateKey: {
-    type: DataTypes.STRING(255),
+    type: DataTypes.STRING(64),
     allowNull: false
   }
 }, {
