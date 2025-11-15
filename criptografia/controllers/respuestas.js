@@ -1,18 +1,48 @@
-const { Pregunta, Encuesta, Respuesta, OpcionRespuesta } = require('../models');
+const { Pregunta, Encuesta, Respuesta, OpcionRespuesta, Usuario } = require('../models');
 const { dbCriptografia } = require('../database/config');
+const crypto = require('crypto');
 
 // POST /respuestas - Responder pregunta
 const crearRespuesta = async (req, res) => {
   try {
     const { idUsuario } = req.user;
-    const { data } = req.body;
-    console.log(data);
+    const { data, publicKey, firma } = req.body;
     if (!idUsuario) {
       return res.status(400).json({ error: 'Falta idUsuario' });
     }
     if (!data) {
       return res.status(400).json({ error: 'Falta la información o no es un arreglo' });
     }
+    if (!publicKey || !firma) {
+      return res.status(400).json({ error: 'Falta publicKey o firma para verificar identidad' });
+    }
+
+    // Obtener usuario de la BD para verificar identidad
+    const usuario = await Usuario.findByPk(idUsuario);
+    if (!usuario) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Verificar la firma RSA usando la publicKey enviada por el cliente
+    // Reconstruir el mensaje original
+    const mensaje = publicKey + JSON.stringify(data);
+    
+    // Verificar la firma con la clave pública
+    const verify = crypto.createVerify('SHA256');
+    verify.update(mensaje);
+    verify.end();
+    
+    let firmaValida = false;
+    try {
+      firmaValida = verify.verify(publicKey, firma, 'base64');
+    } catch (error) {
+      return res.status(403).json({ error: 'Clave pública inválida o firma corrupta' });
+    }
+
+    if (!firmaValida) {
+      return res.status(403).json({ error: 'Firma inválida - identidad no verificada' });
+    }
+
     const respuestasArray = data;
     const transaction = await dbCriptografia.transaction();
     try {
@@ -39,6 +69,7 @@ const crearRespuesta = async (req, res) => {
 
       res.json({ 
         mensaje: 'Respuestas registradas exitosamente',
+        verificado: true
       });
     } catch (err) {
       await transaction.rollback();

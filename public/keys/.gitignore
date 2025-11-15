@@ -1,0 +1,5 @@
+# Ignorar todas las claves públicas generadas
+*.pem
+
+# Mantener el directorio en git
+!.gitignore

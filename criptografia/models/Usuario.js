@@ -22,7 +22,7 @@ const Usuario = dbCriptografia.define('Usuario', {
     allowNull: false
   },
   privateKey: {
-    type: DataTypes.STRING(64),
+    type: DataTypes.TEXT,  // Cambiar a TEXT para soportar claves RSA en formato PEM
     allowNull: false
   }
 }, {

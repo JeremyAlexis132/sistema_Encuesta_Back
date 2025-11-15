@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 const { Administrador, Usuario } = require('../models');
 
 // Configuración de rounds para bcrypt: convertir la variable de entorno a número
@@ -65,21 +67,49 @@ const crearUsuario = async (req, res) => {
       return res.status(400).json({ error: 'El número de cuenta ya existe' });
     }
     
-    const privateKey = crypto.randomBytes(32).toString('hex');
-    const publicKey = crypto.randomBytes(32).toString('hex');
+    // Generar par de claves RSA (privateKey y publicKey están matemáticamente relacionadas)
+    const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+      publicKeyEncoding: {
+        type: 'spki',
+        format: 'pem'
+      },
+      privateKeyEncoding: {
+        type: 'pkcs8',
+        format: 'pem'
+      }
+    });
+    
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
     
-    await Usuario.create({
+    const usuario = await Usuario.create({
       numeroCuenta,
       correo,
       password: passwordHash,
-      privateKey
+      privateKey  // Guardar la clave privada en formato PEM
     });
+    
+    // Crear directorio para claves públicas si no existe
+    const keysDir = path.join(__dirname, '../../public/keys');
+    if (!fs.existsSync(keysDir)) {
+      fs.mkdirSync(keysDir, { recursive: true });
+    }
+    
+    // Generar nombre único para el archivo de clave pública
+    const filename = `publickey_${usuario.idUsuario}_${numeroCuenta}.pem`;
+    const filePath = path.join(keysDir, filename);
+    
+    // Guardar clave pública en archivo
+    fs.writeFileSync(filePath, publicKey);
+    
+    // URL para descargar la clave pública
+    const publicKeyUrl = `/keys/${filename}`;
     
     res.status(201).json({
       mensaje: 'Usuario creado exitosamente',
       usuario: { numeroCuenta, correo },
-      publicKey
+      publicKeyUrl,  // URL para descargar el archivo
+      publicKeyFile: filename  // Nombre del archivo
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -3,6 +3,10 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { Usuario } = require('../models');
 
+const DEFAULT_BCRYPT_ROUNDS = 10;
+const _envRounds = Number.parseInt(process.env.BCRYPT_ROUNDS, 10);
+const BCRYPT_ROUNDS = Number.isInteger(_envRounds) ? _envRounds : DEFAULT_BCRYPT_ROUNDS;
+
 // POST /auth/registro - Registro de usuario
 const registro = async (req, res) => {
   try {
@@ -30,7 +34,7 @@ const registro = async (req, res) => {
     // Generar claves
     const privateKey = crypto.randomBytes(32).toString('hex');
     const publicKey = crypto.randomBytes(32).toString('hex');
-    const passwordHash = await bcrypt.hash(password, process.env.BCRYPT_ROUNDS);
+    const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
     // Guardar usuario
     await Usuario.create({

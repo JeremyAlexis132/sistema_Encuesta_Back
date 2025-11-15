@@ -35,29 +35,31 @@ const generarFirma = async (req, res) => {
       return res.status(403).json({ error: 'Solo usuarios pueden solicitar firmas' });
     }
 
-    const { idEncuesta, mensajeCegado } = req.body;
+    const { publicKey, data } = req.body;
 
-    if (!idEncuesta || !mensajeCegado) {
-      return res.status(400).json({ error: 'Falta idEncuesta o mensajeCegado' });
+    if (!publicKey || !data) {
+      return res.status(400).json({ error: 'Falta publicKey o data (respuestas)' });
     }
 
     const usuario = await Usuario.findByPk(req.user.idUsuario);
-    const encuesta = await Encuesta.findByPk(idEncuesta);
 
-    if (!usuario || !encuesta) {
-      return res.status(404).json({ error: 'Usuario o encuesta no encontrado' });
+    if (!usuario) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
-    // Firma ciega: combinar clavePrivada + mensajeCegado
-    const firmaBlind = crypto
-      .createHash('sha256')
-      .update(usuario.privateKey + mensajeCegado)
-      .digest('hex');
+    // Crear el mensaje a firmar: combinar publicKey + datos
+    const mensaje = publicKey + JSON.stringify(data);
+    
+    // Firmar con RSA usando la clave privada del usuario
+    const sign = crypto.createSign('SHA256');
+    sign.update(mensaje);
+    sign.end();
+    const firmaBlind = sign.sign(usuario.privateKey, 'base64');
 
     res.json({
-      mensaje: 'Firma ciega generada',
-      idEncuesta,
-      firmaBlind,
+      mensaje: 'Firma ciega generada exitosamente',
+      firma: firmaBlind,
+      publicKey,
       timestamp: new Date().toISOString()
     });
   } catch (err) {
